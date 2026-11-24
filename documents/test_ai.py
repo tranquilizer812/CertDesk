@@ -259,7 +259,13 @@ class AiWorkflowTests(TestCase):
             {
                 "file": SimpleUploadedFile(
                     "vendor-certificate.pdf",
-                    b"%PDF-1.4\n% synthetic test document\n%%EOF\n",
+                    (
+                        b"%PDF-1.4\n"
+                        b"1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n"
+                        b"2 0 obj\n<< /Type /Pages /Kids [] /Count 0 >>\nendobj\n"
+                        b"xref\n0 3\n0000000000 65535 f \n0000000009 00000 n \n0000000058 00000 n \n"
+                        b"trailer\n<< /Size 3 /Root 1 0 R >>\nstartxref\n110\n%%EOF\n"
+                    ),
                     content_type="application/pdf",
                 ),
             },
@@ -274,6 +280,27 @@ class AiWorkflowTests(TestCase):
         AI_API_KEY="secret-key",
         AI_MODEL="vision-model",
     )
+    @override_settings(
+        AI_BASE_URL="https://ai.example/v1",
+        AI_API_KEY="secret-key",
+        AI_MODEL="vision-model",
+    )
+    @patch("documents.views.extract_document_metadata")
+    def test_provider_error_does_not_expose_secret_or_raw_error(self, extract):
+        extract.side_effect = MetadataExtractionError("provider secret-key exploded")
+        self.client.force_login(self.user)
+
+        response = self.client.post(
+            reverse("documents:extract_ai_metadata", args=[self.item.pk]),
+            follow=True,
+        )
+
+        self.assertContains(response, "AI metadata extraction is unavailable")
+        self.assertNotContains(response, "secret-key")
+        self.assertNotContains(response, "exploded")
+        self.document.refresh_from_db()
+        self.assertEqual(self.document.carrier, "Manual Carrier")
+
     def test_apply_cannot_target_another_request_in_same_workspace(self):
         other_vendor = Vendor.objects.create(
             organization=self.org,

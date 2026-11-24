@@ -1,16 +1,40 @@
 from datetime import timedelta
+from io import BytesIO
+from pathlib import Path
 import tempfile
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management import call_command
+from django.core.management.base import CommandError
 from django.test import TestCase, override_settings
 from django.urls import reverse
 from django.utils import timezone
+from PIL import Image
 
 from accounts.models import Membership, Organization
 
-from .models import Document, DocumentRequest, Property, Vendor
+from .models import Document, DocumentRequest, Property, ReminderLog, UploadToken, Vendor
+
+
+VALID_PDF = (
+    b"%PDF-1.4\n"
+    b"1 0 obj\n<< /Type /Catalog /Pages 2 0 R >>\nendobj\n"
+    b"2 0 obj\n<< /Type /Pages /Kids [] /Count 0 >>\nendobj\n"
+    b"xref\n0 3\n0000000000 65535 f \n0000000009 00000 n \n0000000058 00000 n \n"
+    b"trailer\n<< /Size 3 /Root 1 0 R >>\nstartxref\n110\n%%EOF\n"
+)
+
+
+def image_upload(name, image_format):
+    output = BytesIO()
+    Image.new("RGB", (2, 2), "white").save(output, format=image_format)
+    return SimpleUploadedFile(
+        name,
+        output.getvalue(),
+        content_type="image/png" if image_format == "PNG" else "image/jpeg",
+    )
 
 
 class CertDeskWorkflowTests(TestCase):
@@ -93,7 +117,7 @@ class CertDeskWorkflowTests(TestCase):
         )
         upload = SimpleUploadedFile(
             "certificate.pdf",
-            b"%PDF-1.4\n% synthetic test document\n%%EOF\n",
+            VALID_PDF,
             content_type="application/pdf",
         )
         response = self.client.post(
@@ -111,7 +135,7 @@ class CertDeskWorkflowTests(TestCase):
             {
                 "file": SimpleUploadedFile(
                     "second.pdf",
-                    b"%PDF-1.4\n% synthetic test document\n%%EOF\n",
+                    VALID_PDF,
                     content_type="application/pdf",
                 )
             },
@@ -239,7 +263,7 @@ class CertDeskWorkflowTests(TestCase):
             request=self.item,
             file=SimpleUploadedFile(
                 "certificate.pdf",
-                b"%PDF-1.4\n% synthetic test document\n%%EOF\n",
+                VALID_PDF,
                 content_type="application/pdf",
             ),
             original_filename="certificate.pdf",
@@ -261,6 +285,54 @@ class CertDeskWorkflowTests(TestCase):
         response = self.client.get(reverse("documents:export_csv"))
         self.assertEqual(response.status_code, 200)
         self.assertIn(b"'  =HYPERLINK", response.content)
+
+    def test_csv_export_excludes_other_workspace_rows(self):
+        other_vendor = Vendor.objects.create(
+            organization=self.other_org,
+            name="Foreign Export Vendor",
+            email="foreign-export@example.com",
+        )
+        DocumentRequest.objects.create(
+            organization=self.other_org,
+            vendor=other_vendor,
+            document_type=DocumentRequest.TYPE_COI,
+        )
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("documents:export_csv"))
+        self.assertEqual(response.status_code, 200)
+        self.assertNotContains(response, "Foreign Export Vendor")
+        self.assertNotContains(response, "foreign-export@example.com")
+
+    def test_csv_import_reports_partial_errors_without_cross_workspace_rows(self):
+        self.client.force_login(self.user)
+        csv_data = (
+            "vendor,vendor_email,document_type\n"
+            "Valid Co,valid@example.com,coi\n"
+            "Broken Co,not-an-email,coi\n"
+        )
+        response = self.client.post(
+            reverse("documents:import_csv"),
+            {
+                "file": SimpleUploadedFile(
+                    "requests.csv",
+                    csv_data.encode("utf-8"),
+                    content_type="text/csv",
+                )
+            },
+            follow=True,
+        )
+        self.assertContains(response, "Imported 1 document request(s)")
+        self.assertContains(response, "Skipped 1 row(s)")
+        self.assertTrue(
+            DocumentRequest.objects.filter(
+                organization=self.org, vendor__name="Valid Co"
+            ).exists()
+        )
+        self.assertFalse(Vendor.objects.filter(name="Broken Co").exists())
+        self.assertEqual(
+            DocumentRequest.objects.filter(organization=self.other_org).count(),
+            0,
+        )
 
     def test_csv_import_respects_plan_limit(self):
         self.org.plan = Organization.PLAN_STARTER
@@ -294,9 +366,135 @@ class CertDeskWorkflowTests(TestCase):
         self.assertEqual(DocumentRequest.objects.filter(organization=self.org).count(), 75)
 
     def test_reminder_dry_run_does_not_create_upload_token(self):
-        from .models import UploadToken
-
         self.item.due_date = timezone.localdate() - timedelta(days=1)
         self.item.save(update_fields=["due_date"])
         call_command("send_expiration_reminders", days=30, dry_run=True)
         self.assertEqual(UploadToken.objects.count(), 0)
+
+    def test_upload_rejects_mismatched_mime_and_spoofed_content(self):
+        self.client.force_login(self.user)
+        mismatched = SimpleUploadedFile(
+            "certificate.pdf",
+            VALID_PDF,
+            content_type="image/png",
+        )
+        response = self.client.post(
+            reverse("documents:upload_document", args=[self.item.pk]),
+            {"file": mismatched},
+        )
+        self.assertContains(response, "MIME type does not match")
+        self.assertEqual(self.item.documents.count(), 0)
+
+        spoofed = SimpleUploadedFile(
+            "certificate.png",
+            VALID_PDF,
+            content_type="image/png",
+        )
+        response = self.client.post(
+            reverse("documents:upload_document", args=[self.item.pk]),
+            {"file": spoofed},
+        )
+        self.assertContains(response, "not a valid image")
+        self.assertEqual(self.item.documents.count(), 0)
+
+    def test_upload_accepts_real_png_and_jpeg_content(self):
+        self.client.force_login(self.user)
+        for filename, image_format in (
+            ("certificate.png", "PNG"),
+            ("certificate.jpg", "JPEG"),
+        ):
+            with self.subTest(filename=filename):
+                response = self.client.post(
+                    reverse("documents:upload_document", args=[self.item.pk]),
+                    {"file": image_upload(filename, image_format)},
+                )
+                self.assertRedirects(
+                    response,
+                    reverse("documents:request_detail", args=[self.item.pk]),
+                )
+        self.assertEqual(self.item.documents.count(), 2)
+
+    def test_lost_public_upload_race_does_not_create_document_or_orphan_file(self):
+        token = UploadToken.objects.create(
+            request=self.item, expires_at=timezone.now() + timedelta(days=7)
+        )
+        media_root = Path(self.media_directory.name)
+        before = set(media_root.rglob("*"))
+        with patch("documents.views.claim_upload_token", return_value=False):
+            response = self.client.post(
+                reverse("documents:public_upload", args=[token.token]),
+                {"file": SimpleUploadedFile("race.pdf", VALID_PDF, content_type="application/pdf")},
+            )
+        self.assertContains(response, "expired")
+        self.assertEqual(self.item.documents.count(), 0)
+        after = set(media_root.rglob("*"))
+        self.assertEqual(
+            [path for path in after - before if path.is_file()],
+            [],
+        )
+
+    def test_expired_public_token_rejects_upload(self):
+        token = UploadToken.objects.create(
+            request=self.item, expires_at=timezone.now() - timedelta(seconds=1)
+        )
+        response = self.client.post(
+            reverse("documents:public_upload", args=[token.token]),
+            {"file": SimpleUploadedFile("expired.pdf", VALID_PDF, content_type="application/pdf")},
+        )
+        self.assertContains(response, "expired")
+        self.assertEqual(self.item.documents.count(), 0)
+
+    def test_cross_workspace_cannot_create_request_with_foreign_vendor(self):
+        foreign_vendor = Vendor.objects.create(
+            organization=self.other_org,
+            name="Foreign Vendor",
+            email="foreign@example.com",
+        )
+        self.client.force_login(self.user)
+        response = self.client.post(
+            reverse("documents:create_request"),
+            {"vendor": foreign_vendor.pk, "document_type": "coi"},
+        )
+        self.assertRedirects(response, reverse("documents:list"))
+        self.assertFalse(
+            DocumentRequest.objects.filter(
+                organization=self.org, vendor=foreign_vendor
+            ).exists()
+        )
+
+    def test_email_upload_link_failure_does_not_leave_usable_token(self):
+        self.client.force_login(self.user)
+        with patch("documents.views.send_mail", side_effect=OSError("smtp unavailable")):
+            response = self.client.post(
+                reverse("documents:email_upload_link", args=[self.item.pk]),
+                follow=True,
+            )
+        self.assertContains(response, "No link was issued")
+        self.assertEqual(UploadToken.objects.count(), 0)
+
+    def test_reminder_is_idempotent_even_when_kind_changes_during_day(self):
+        from django.core import mail
+
+        self.item.due_date = timezone.localdate() - timedelta(days=1)
+        self.item.save(update_fields=["due_date"])
+        call_command("send_expiration_reminders", days=30)
+        self.assertEqual(len(mail.outbox), 1)
+
+        ReminderLog.objects.filter(request=self.item).update(kind="expired")
+        call_command("send_expiration_reminders", days=30)
+        self.assertEqual(len(mail.outbox), 1)
+
+    def test_reminder_send_failure_removes_token_and_allows_retry(self):
+        self.item.due_date = timezone.localdate() - timedelta(days=1)
+        self.item.save(update_fields=["due_date"])
+        with patch(
+            "documents.management.commands.send_expiration_reminders.send_mail",
+            side_effect=OSError("smtp unavailable"),
+        ):
+            with self.assertRaisesMessage(CommandError, "no email link was issued"):
+                call_command("send_expiration_reminders", days=30)
+        self.assertEqual(UploadToken.objects.count(), 0)
+        self.assertEqual(
+            self.item.reminder_logs.filter(sent_on=timezone.localdate()).count(),
+            0,
+        )

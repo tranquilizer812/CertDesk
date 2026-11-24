@@ -3,6 +3,7 @@ import uuid
 from datetime import timedelta
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.urls import reverse
 from django.utils import timezone
@@ -72,6 +73,17 @@ class DocumentRequest(models.Model):
     def __str__(self):
         return f"{self.vendor.name} · {self.get_document_type_display()}"
 
+    def clean(self):
+        super().clean()
+        if self.vendor_id and self.vendor.organization_id != self.organization_id:
+            raise ValidationError("The vendor must belong to the same organization.")
+        if self.property_id and self.property.organization_id != self.organization_id:
+            raise ValidationError("The property must belong to the same organization.")
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        return super().save(*args, **kwargs)
+
     @builtins.property
     def status(self):
         document = self.latest_document
@@ -85,7 +97,7 @@ class DocumentRequest(models.Model):
 
     @builtins.property
     def latest_document(self):
-        return self.documents.order_by("-uploaded_at").first()
+        return self.documents.filter(organization=self.organization).order_by("-uploaded_at").first()
 
 
 class Document(models.Model):
@@ -113,6 +125,15 @@ class Document(models.Model):
     def __str__(self):
         return self.original_filename
 
+    def clean(self):
+        super().clean()
+        if self.request_id and self.request.organization_id != self.organization_id:
+            raise ValidationError("The request must belong to the same organization.")
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        return super().save(*args, **kwargs)
+
     @property
     def status(self):
         today = timezone.localdate()
@@ -132,7 +153,7 @@ class ReminderLog(models.Model):
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(fields=["request", "kind", "sent_on"], name="unique_daily_reminder")
+            models.UniqueConstraint(fields=["request", "sent_on"], name="unique_daily_reminder")
         ]
         ordering = ("-sent_at",)
 

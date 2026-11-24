@@ -8,6 +8,7 @@ from django.views.generic import FormView
 from django.urls import reverse_lazy
 
 from .forms import LoginForm, SignupForm
+from .models import Membership
 
 
 class SignupView(FormView):
@@ -16,7 +17,7 @@ class SignupView(FormView):
     success_url = reverse_lazy("documents:dashboard")
 
     def dispatch(self, request, *args, **kwargs):
-        if request.user.is_authenticated:
+        if request.user.is_authenticated and Membership.objects.filter(user=request.user).exists():
             return redirect("documents:dashboard")
         return super().dispatch(request, *args, **kwargs)
 

@@ -2,12 +2,12 @@
 {% block title %}Create workspace · CertDesk{% endblock %}
 {% block body_class %}auth-page{% endblock %}
 {% block content %}
-<div class="auth-shell">
+<main id="main-content" class="auth-shell">
   <a class="brand auth-brand" href="{% url 'core:landing' %}"><span class="brand-mark">C</span><span>CertDesk</span></a>
   <div class="auth-card wide">
     <span class="auth-kicker">START FREE</span><h1>Create your workspace</h1><p>Set up your first document request in under three minutes.</p>
     <form method="post" class="stack-form">{% csrf_token %}{{ form.non_field_errors }}{% for field in form %}<label>{{ field.label }}{{ field }}{{ field.errors }}</label>{% endfor %}<button class="btn btn-primary btn-block">Create workspace</button></form>
     <p class="auth-switch">Already have an account? <a href="{% url 'accounts:login' %}">Sign in</a></p>
   </div>
-</div>
+</main>
 {% endblock %}

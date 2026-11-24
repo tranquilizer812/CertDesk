@@ -2,7 +2,7 @@ from datetime import timedelta
 
 from django.conf import settings
 from django.core.mail import send_mail
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 
 from documents.models import DocumentRequest, ReminderLog, UploadToken
@@ -28,8 +28,19 @@ class Command(BaseCommand):
                 kind = "expired" if document.expires_on < today else "expiring"
             if not kind:
                 continue
-            if ReminderLog.objects.filter(request=item, kind=kind, sent_on=today).exists():
+            if ReminderLog.objects.filter(request=item, sent_on=today).exists():
                 continue
+            if options["dry_run"]:
+                self.stdout.write(f"Would email {item.vendor.email}: {item} ({kind})")
+                continue
+            reminder, created = ReminderLog.objects.get_or_create(
+                request=item,
+                sent_on=today,
+                defaults={"organization": item.organization, "kind": kind},
+            )
+            if not created:
+                continue
+            token = None
             if kind == "missing":
                 subject = f"Document still needed: {item.get_document_type_display()}"
                 upload_url = ""
@@ -55,12 +66,23 @@ class Command(BaseCommand):
                     f"({days} day{'s' if days != 1 else ''} from today).\n\n"
                     "Please send the current document to your property manager."
                 )
-            if options["dry_run"]:
-                self.stdout.write(f"Would email {item.vendor.email}: {item} ({kind})")
-                continue
-            send_mail(subject, body, None, [item.vendor.email], fail_silently=False)
-            ReminderLog.objects.create(
-                organization=item.organization, request=item, kind=kind, sent_on=today
-            )
+            try:
+                delivered = send_mail(
+                    subject, body, None, [item.vendor.email], fail_silently=False
+                )
+            except Exception:
+                reminder.delete()
+                if token is not None:
+                    token.delete()
+                raise CommandError(
+                    f"Could not send the reminder for request {item.pk}; no email link was issued."
+                ) from None
+            if delivered != 1:
+                reminder.delete()
+                if token is not None:
+                    token.delete()
+                raise CommandError(
+                    f"Could not send the reminder for request {item.pk}; no email link was issued."
+                )
             sent += 1
         self.stdout.write(self.style.SUCCESS(f"Sent {sent} document reminder(s)."))

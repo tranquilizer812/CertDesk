@@ -2,5 +2,5 @@
 {% block title %}Upload received · CertDesk{% endblock %}
 {% block body_class %}public-page{% endblock %}
 {% block content %}
-<div class="public-shell"><a class="brand" href="/"><span class="brand-mark">C</span><span>CertDesk</span></a><div class="public-card"><span class="success-icon">✓</span><h1>Upload received</h1><p>Thank you. The property team has been notified and can now track your document’s expiration date.</p><div class="success-summary"><strong>{{ item.vendor.name }}</strong><span>{{ item.get_document_type_display }}</span></div><a class="btn btn-dark" href="/">Done</a></div></div>
+<main id="main-content" class="public-shell"><a class="brand" href="/"><span class="brand-mark">C</span><span>CertDesk</span></a><div class="public-card"><span class="success-icon">✓</span><h1>Upload received</h1><p>Thank you. The property team has been notified and can now track your document’s expiration date.</p><div class="success-summary"><strong>{{ item.vendor.name }}</strong><span>{{ item.get_document_type_display }}</span></div><a class="btn btn-dark" href="/">Done</a></div></main>
 {% endblock %}

@@ -10,7 +10,8 @@ CertDesk is a focused micro-SaaS for small property-management teams to collect 
 - Email/password workspaces with owner membership
 - Vendor, property, and document-request management
 - Status model: active, expiring within 30 days, expired, missing
-- Internal uploads and one-use vendor upload links (7-day expiry)
+- Internal uploads and one-use vendor upload links (7-day expiry), with a 10 MB PDF/image upload limit
+- CSV imports with a 5 MB file limit
 - Vendor link delivery by email
 - Optional AI-assisted metadata extraction with employee review before details are applied
 - CSV import and export with plan-limit enforcement and spreadsheet-formula protection
@@ -107,9 +108,15 @@ cd C:\CertDesk
 .\.venv\Scripts\python.exe manage.py test
 ```
 
+## Health check
+
+`GET /health/` returns HTTP 200 with `{"status":"ok"}`. It is a lightweight liveness endpoint and does not run a database query; monitor database-backed workflows separately.
+
 ## Production deployment
 
-The included `Dockerfile` and `render.yaml` deploy the web process and PostgreSQL on Render. The Blueprint mounts a 1 GB persistent disk at `/opt/render/project/src/media` and points `MEDIA_ROOT` there, so uploaded files survive redeploys while the service remains single-instance. Set `DEMO_MODE=False`, use the managed PostgreSQL URL, configure production email, and set Stripe keys. For Docker deployments outside Render, mount a durable volume at the configured `MEDIA_ROOT`; for a multi-instance deployment, replace local files with durable object storage.
+The included `Dockerfile` supports container deployments, while `render.yaml` defines the Render web service and PostgreSQL database. The Blueprint mounts a 1 GB persistent disk at `/opt/render/project/src/media` and points `MEDIA_ROOT` there, so uploaded files survive redeploys while the service remains single-instance. Set `DEMO_MODE=False`, use the managed PostgreSQL URL, configure production email, and set Stripe keys. For Docker deployments outside Render, mount a durable volume at the configured `MEDIA_ROOT`; for a multi-instance deployment, replace local files with durable object storage.
+
+For production, set `DEBUG=False`, `SESSION_COOKIE_SECURE=True`, `CSRF_COOKIE_SECURE=True`, `SECURE_SSL_REDIRECT=True`, and `SECURE_HSTS_SECONDS=31536000` (or another deliberate HSTS lifetime). The local `.env.example` disables HTTPS-related settings for plain-HTTP development, so do not carry those local values into production unchanged. Terminate TLS at the platform or reverse proxy and preserve the `X-Forwarded-Proto: https` header.
 
 Before launch, also:
 
@@ -117,7 +124,7 @@ Before launch, also:
 - configure and test the selected AI provider, including its model, multimodal request format, JSON mode, retention terms, and failure behavior;
 - configure daily database backups and test restoration;
 - add an email provider and verify deliverability;
-- restrict `ALLOWED_HOSTS` and enable HTTPS/security headers at the platform;
+- restrict `ALLOWED_HOSTS`, terminate HTTPS at the platform, and verify the production security settings with `manage.py check --deploy`;
 - manually onboard three to five design partners and collect paid pilot commitments.
 
 ## Monetization notes

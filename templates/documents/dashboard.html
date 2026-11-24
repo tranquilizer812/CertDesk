@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Overview · CertDesk{% endblock %}
+{% block body_class %}app-page{% endblock %}
+{% block content %}
+<div class="app-layout">
+  <aside class="sidebar"><a class="brand" href="{% url 'documents:dashboard' %}"><span class="brand-mark">C</span><span>CertDesk</span></a><div class="workspace-pill"><span class="workspace-logo">{{ organization.name|first }}</span><div><b>{{ organization.name }}</b><small>{{ organization.get_plan_display }} plan</small></div></div><nav class="app-nav"><a class="active" href="{% url 'documents:dashboard' %}"><i>⌂</i> Overview</a><a href="{% url 'documents:list' %}"><i>▤</i> Documents</a><a href="{% url 'documents:list' %}?status=expired"><i>◷</i> Expirations</a><a href="{% url 'documents:export_csv' %}"><i>↓</i> Export</a></nav><div class="sidebar-bottom"><a href="{% url 'core:pricing' %}">Plans & billing</a><a href="{% url 'accounts:logout' %}">Sign out</a></div></aside>
+  <main class="app-main">
+    <header class="app-header"><div><span class="app-kicker">WORKSPACE</span><h1>Document overview</h1></div><div class="header-actions"><a class="btn btn-outline btn-small" href="{% url 'documents:export_csv' %}">Export CSV</a><a class="btn btn-primary btn-small" href="{% url 'documents:list' %}#new-request">+ New request</a></div></header>
+    <section class="welcome-strip"><div><h2>Good morning 👋</h2><p>Here’s what needs your attention across {{ organization.name }}.</p></div><div class="attention-score"><strong>{{ counts.expired|add:counts.expiring }}</strong><span>items need action</span></div></section>
+    <section class="stat-grid">
+      <article class="stat-card"><span class="stat-icon active">✓</span><div><small>ACTIVE DOCUMENTS</small><strong>{{ counts.active }}</strong><p>Current and on file</p></div></article>
+      <article class="stat-card"><span class="stat-icon warning">◷</span><div><small>EXPIRING SOON</small><strong>{{ counts.expiring }}</strong><p>Within the next 30 days</p></div></article>
+      <article class="stat-card"><span class="stat-icon danger">!</span><div><small>EXPIRED</small><strong>{{ counts.expired }}</strong><p>Past expiration date</p></div></article>
+      <article class="stat-card"><span class="stat-icon missing">—</span><div><small>MISSING</small><strong>{{ counts.missing }}</strong><p>Not yet received</p></div></article>
+    </section>
+    <div class="content-grid">
+      <section class="panel"><div class="panel-head"><div><h2>Needs attention</h2><p>Upcoming and overdue expirations</p></div><a href="{% url 'documents:list' %}?status=expired">View all →</a></div>
+        {% for item in upcoming %}<a class="attention-row" href="{% url 'documents:request_detail' item.pk %}"><span class="file-badge">{{ item.get_document_type_display|slice:':3'|upper }}</span><div><strong>{{ item.vendor.name }}</strong><small>{{ item.get_document_type_display }}{% if item.property %} · {{ item.property.name }}{% endif %}</small></div><span class="status status-{{ item.status }}">{{ item.status }}</span></a>{% empty %}<div class="empty-state"><span>✓</span><h3>Nothing urgent</h3><p>All tracked documents are current.</p></div>{% endfor %}
+      </section>
+      <section class="panel"><div class="panel-head"><div><h2>Recent uploads</h2><p>Latest documents received</p></div></div>
+        {% for doc in recent %}<a class="recent-row" href="{% url 'documents:request_detail' doc.request.pk %}"><span class="file-badge">{{ doc.original_filename|slice:':3'|upper }}</span><div><strong>{{ doc.vendor.name }}</strong><small>{{ doc.original_filename }}</small></div><time>{{ doc.uploaded_at|date:"M j" }}</time></a>{% empty %}<div class="empty-state compact"><h3>No uploads yet</h3><p>Documents will appear here after vendors upload them.</p></div>{% endfor %}
+      </section>
+    </div>
+  </main>
+</div>
+{% endblock %}

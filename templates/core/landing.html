@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}CertDesk — Every vendor document, under control{% endblock %}
+{% block body_class %}marketing-page{% endblock %}
+{% block content %}
+<header class="nav shell">
+  <a class="brand" href="{% url 'core:landing' %}"><span class="brand-mark">C</span><span>CertDesk</span></a>
+  <nav class="nav-links">
+    <a href="#how">How it works</a>
+    <a href="{% url 'core:pricing' %}">Pricing</a>
+    <a href="{% url 'accounts:login' %}">Sign in</a>
+    <a class="btn btn-small btn-dark" href="{% url 'accounts:signup' %}">Start free</a>
+  </nav>
+</header>
+<main>
+  <section class="hero shell">
+    <div class="hero-copy">
+      <div class="eyebrow"><span></span> Built for small property teams</div>
+      <h1>Every vendor document.<br><em>Under control.</em></h1>
+      <p class="hero-lead">Collect certificates, track expirations, and chase renewals without another spreadsheet. CertDesk gives your team one calm place to stay ahead.</p>
+      <div class="hero-actions">
+        <form method="post" action="{% url 'core:demo_login' %}">{% csrf_token %}<button class="btn btn-primary btn-large">Explore the live demo <span>→</span></button></form>
+        <a class="text-link" href="#how">See how it works <span>↓</span></a>
+      </div>
+      <div class="hero-note"><span class="avatar-stack"><i>J</i><i>M</i><i>A</i></span> No credit card · Set up in 3 minutes</div>
+    </div>
+    <div class="hero-visual">
+      <div class="dashboard-preview">
+        <div class="preview-top"><span class="mini-brand">C</span><strong>Northstar PM</strong><span class="preview-user">MS</span></div>
+        <div class="preview-body">
+          <div class="preview-sidebar"><i class="active"></i><i></i><i></i><i></i><i></i></div>
+          <div class="preview-content">
+            <div class="preview-heading"><div><small>GOOD MORNING</small><strong>Document overview</strong></div><button>+ Request</button></div>
+            <div class="preview-stats">
+              <div><small>ACTIVE</small><strong>24</strong><span class="trend">↑ 8%</span></div>
+              <div><small>EXPIRING</small><strong>3</strong><span class="warn">Next 30 days</span></div>
+              <div><small>MISSING</small><strong>2</strong><span class="danger">Needs action</span></div>
+            </div>
+            <div class="preview-card"><strong>Needs attention</strong><div class="fake-row"><span class="file-icon">PDF</span><div><b>Bright Roof Co.</b><small>Certificate of Insurance</small></div><span class="pill danger">Expired</span></div><div class="fake-row"><span class="file-icon">PDF</span><div><b>CleanRight LLC</b><small>General Liability</small></div><span class="pill warn">18 days</span></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="floating-card floating-alert"><span>!</span><div><strong>Renewal due in 7 days</strong><small>Sent to Bright Roof Co.</small></div></div>
+    </div>
+  </section>
+  <section class="proof-strip"><div class="shell"><span>BUILT FOR PROPERTY MANAGERS WHO</span><b>Collect less manually.</b><b>Miss fewer renewals.</b><b>Close the loop faster.</b></div></section>
+  <section class="section shell" id="how">
+    <div class="section-heading"><div class="eyebrow"><span></span> One simple workflow</div><h2>From inbox chaos<br>to <em>everything current.</em></h2><p>Give vendors a direct upload link. Keep every document, deadline, and follow-up in one place.</p></div>
+    <div class="feature-grid">
+      <article class="feature-card"><span class="feature-number">01</span><div class="feature-icon">↥</div><h3>Collect without chasing</h3><p>Send a secure link to each vendor. No account or complicated portal required.</p></article>
+      <article class="feature-card featured"><span class="feature-number">02</span><div class="feature-icon">◷</div><h3>Know what expires next</h3><p>Every document gets a clear status and renewal date, visible to your whole team.</p></article>
+      <article class="feature-card"><span class="feature-number">03</span><div class="feature-icon">✓</div><h3>Keep an audit trail</h3><p>Export a clean record of documents, dates, and status whenever you need it.</p></article>
+    </div>
+  </section>
+  <section class="cta-section shell"><div><span class="eyebrow light"><span></span> Start with the free demo</span><h2>Less chasing.<br>More certainty.</h2></div><form method="post" action="{% url 'core:demo_login' %}">{% csrf_token %}<button class="btn btn-light btn-large">Open the demo workspace <span>→</span></button></form></section>
+</main>
+<footer class="footer shell"><a class="brand" href="{% url 'core:landing' %}"><span class="brand-mark">C</span><span>CertDesk</span></a><p>Document organization for small teams.</p><div><a href="{% url 'core:legal' %}">Legal & privacy</a><a href="{% url 'core:pricing' %}">Pricing</a></div></footer>
+{% endblock %}

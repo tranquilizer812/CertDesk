@@ -1,0 +1,24 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="CertDesk keeps vendor documents organized, renewed, and easy to find.">
+  <title>{% block title %}CertDesk{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'styles.css' %}">
+  <link rel="stylesheet" href="{% static 'marketing.css' %}">
+  <link rel="stylesheet" href="{% static 'app.css' %}">
+  <link rel="stylesheet" href="{% static 'app-extra.css' %}">
+  <link rel="stylesheet" href="{% static 'marketing-extra.css' %}">
+</head>
+<body class="{% block body_class %}{% endblock %}">
+  {% if messages %}
+    <div class="toast-stack" aria-live="polite">
+      {% for message in messages %}<div class="toast toast-{{ message.tags|default:'info' }}">{{ message }}</div>{% endfor %}
+    </div>
+  {% endif %}
+  {% block content %}{% endblock %}
+  <script src="{% static 'app.js' %}" defer></script>
+</body>
+</html>

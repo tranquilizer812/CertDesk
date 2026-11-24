@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Sign in · CertDesk{% endblock %}
+{% block body_class %}auth-page{% endblock %}
+{% block content %}
+<div class="auth-shell">
+  <a class="brand auth-brand" href="{% url 'core:landing' %}"><span class="brand-mark">C</span><span>CertDesk</span></a>
+  <div class="auth-card">
+    <span class="auth-kicker">WELCOME BACK</span><h1>Sign in to your workspace</h1><p>Manage vendor documents without the spreadsheet chase.</p>
+    <form method="post" class="stack-form">{% csrf_token %}{{ form.non_field_errors }}{% for field in form %}<label>{{ field.label }}{{ field }}{{ field.errors }}</label>{% endfor %}<button class="btn btn-primary btn-block">Sign in</button></form>
+    <div class="or"><span>or</span></div>
+    <form method="post" action="{% url 'core:demo_login' %}">{% csrf_token %}<button class="btn btn-outline btn-block">Explore the live demo</button></form>
+    <p class="auth-switch">New to CertDesk? <a href="{% url 'accounts:signup' %}">Create a workspace</a></p>
+  </div>
+</div>
+{% endblock %}

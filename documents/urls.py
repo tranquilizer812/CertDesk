@@ -21,4 +21,5 @@ urlpatterns = [
     path("properties/new/", views.create_property, name="create_property"),
     path("vendors/new/", views.create_vendor, name="create_vendor"),
     path("export.csv", views.export_csv, name="export_csv"),
+    path("documents/filter/", views.request_list_json, name="list_json"),
 ]

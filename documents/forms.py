@@ -156,7 +156,7 @@ class DocumentForm(forms.ModelForm):
         widgets = {
             "file": forms.ClearableFileInput(attrs={"accept": ".pdf,.png,.jpg,.jpeg"}),
             "expires_on": forms.DateInput(attrs={"type": "date"}),
-            "notes": forms.Textarea(attrs={"rows": 3, "placeholder": "Optional internal note"}),
+            "notes": forms.Textarea(attrs={"rows": 3, "placeholder": "Internal note (visible only to your team)"}),
         }
 
     def clean_file(self):

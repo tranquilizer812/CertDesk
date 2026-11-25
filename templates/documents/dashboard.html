@@ -18,7 +18,7 @@
         {% for item in upcoming %}<a class="attention-row" href="{% url 'documents:request_detail' item.pk %}"><span class="file-badge">{{ item.get_document_type_display|slice:':3'|upper }}</span><div><strong>{{ item.vendor.name }}</strong><small>{{ item.get_document_type_display }}{% if item.property %} · {{ item.property.name }}{% endif %}</small></div><span class="status status-{{ item.status }}">{{ item.status }}</span></a>{% empty %}<div class="empty-state"><span>✓</span><h3>Nothing urgent</h3><p>All tracked documents are current.</p></div>{% endfor %}
       </section>
       <section class="panel"><div class="panel-head"><div><h2>Recent uploads</h2><p>Latest documents received</p></div></div>
-        {% for doc in recent %}<a class="recent-row" href="{% url 'documents:request_detail' doc.request.pk %}"><span class="file-badge">{{ doc.original_filename|slice:':3'|upper }}</span><div><strong>{{ doc.vendor.name }}</strong><small>{{ doc.original_filename }}</small></div><time>{{ doc.uploaded_at|date:"M j" }}</time></a>{% empty %}<div class="empty-state compact"><h3>No uploads yet</h3><p>Documents will appear here after vendors upload them.</p></div>{% endfor %}
+        {% for doc in recent %}<a class="recent-row" href="{% url 'documents:download_document' doc.pk %}"><span class="file-badge">{{ doc.original_filename|slice:':3'|upper }}</span><div><strong>{{ doc.vendor.name }}</strong><small>{{ doc.original_filename }}</small></div><time>{{ doc.uploaded_at|date:"M j" }}</time></a>{% empty %}<div class="empty-state compact"><h3>No uploads yet</h3><p>Documents will appear here after vendors upload them.</p></div>{% endfor %}
       </section>
     </div>
   </main>

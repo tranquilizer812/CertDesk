@@ -43,6 +43,7 @@ class SignupForm(UserCreationForm):
 
 class LoginForm(AuthenticationForm):
     username = forms.EmailField(label="Work email")
+    remember_me = forms.BooleanField(required=False, label="Keep me signed in")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

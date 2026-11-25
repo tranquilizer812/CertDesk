@@ -30,9 +30,10 @@ def demo_login(request):
         return redirect("core:landing")
     User = get_user_model()
     email = "demo@certdesk.app"
-    user, _ = User.objects.get_or_create(email=email, defaults={"username": email})
-    user.set_unusable_password()
-    user.save()
+    user, created = User.objects.get_or_create(email=email, defaults={"username": email})
+    if created:
+        user.set_unusable_password()
+        user.save()
     org = Organization.objects.filter(name="Northstar Property Demo").first()
     if not org:
         org = Organization.objects.create(

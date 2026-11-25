@@ -37,6 +37,12 @@ class AppLoginView(LoginView):
     authentication_form = LoginForm
     redirect_authenticated_user = True
 
+    def form_valid(self, form):
+        remember_me = form.cleaned_data.get("remember_me")
+        if not remember_me:
+            self.request.session.set_expiry(0)  # Session expires when browser closes
+        return super().form_valid(form)
+
     def get_success_url(self):
         return reverse_lazy("documents:dashboard")
 

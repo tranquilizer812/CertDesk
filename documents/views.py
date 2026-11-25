@@ -6,11 +6,13 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.core.mail import send_mail
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.core.validators import validate_email
 from django.db import transaction
-from django.db.models import Q
-from django.http import FileResponse, Http404, HttpResponse, HttpResponseForbidden
+from django.db.models import Q, OuterRef, Subquery
+from django.http import FileResponse, Http404, HttpResponse, HttpResponseForbidden, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 from django.utils import timezone
 from django.views.decorators.http import require_POST
 
@@ -122,11 +124,32 @@ def dashboard(request):
     org = current_organization(request)
     if not org:
         return redirect("accounts:signup")
-    items = requests_for_organization(org).select_related("vendor", "property")
+    today = timezone.localdate()
+    latest_doc_subquery = Document.objects.filter(
+        request=OuterRef("pk"),
+        organization=OuterRef("organization"),
+    ).order_by("-uploaded_at").values("expires_on")[:1]
+    items = requests_for_organization(org).select_related(
+        "vendor", "property"
+    ).annotate(
+        latest_expires_on=Subquery(latest_doc_subquery),
+    )
     counts = {"active": 0, "expiring": 0, "expired": 0, "missing": 0}
     for item in items:
-        counts[item.status] += 1
-    upcoming = [r for r in items if r.status in {"expired", "expiring"}][:6]
+        expires_on = item.latest_expires_on
+        if expires_on is None:
+            counts["missing"] += 1
+        elif expires_on < today:
+            counts["expired"] += 1
+        elif expires_on <= today + timedelta(days=30):
+            counts["expiring"] += 1
+        else:
+            counts["active"] += 1
+    upcoming = [
+        r for r in items
+        if r.latest_expires_on is not None
+        and r.latest_expires_on <= today + timedelta(days=30)
+    ][:6]
     recent = Document.objects.filter(
         organization=org,
         request__organization=org,
@@ -146,7 +169,16 @@ def request_list(request):
     org = current_organization(request)
     query = request.GET.get("q", "").strip()
     status = request.GET.get("status", "")
-    items = requests_for_organization(org).select_related("vendor", "property")
+    today = timezone.localdate()
+    latest_doc_subquery = Document.objects.filter(
+        request=OuterRef("pk"),
+        organization=OuterRef("organization"),
+    ).order_by("-uploaded_at").values("expires_on")[:1]
+    items = requests_for_organization(org).select_related(
+        "vendor", "property"
+    ).annotate(
+        latest_expires_on=Subquery(latest_doc_subquery),
+    )
     if query:
         items = items.filter(
             Q(vendor__name__icontains=query)
@@ -154,13 +186,38 @@ def request_list(request):
             | Q(property__name__icontains=query)
         )
     if status:
-        items = [item for item in items if item.status == status]
+        if status == "missing":
+            items = items.filter(latest_expires_on__isnull=True)
+        elif status == "expired":
+            items = items.filter(latest_expires_on__lt=today)
+        elif status == "expiring":
+            items = items.filter(
+                latest_expires_on__gte=today,
+                latest_expires_on__lte=today + timedelta(days=30),
+            )
+        elif status == "active":
+            items = items.filter(latest_expires_on__gt=today + timedelta(days=30))
     vendors = Vendor.objects.filter(organization=org)
     properties = Property.objects.filter(organization=org)
+    paginator = Paginator(items, 25)
+    page_number = request.GET.get("page")
+    try:
+        page_obj = paginator.page(page_number)
+    except PageNotAnInteger:
+        page_obj = paginator.page(1)
+    except EmptyPage:
+        page_obj = paginator.page(paginator.num_pages)
     return render(
         request,
         "documents/list.html",
-        {"items": items, "query": query, "status": status, "vendors": vendors, "properties": properties},
+        {
+            "items": page_obj,
+            "page_obj": page_obj,
+            "query": query,
+            "status": status,
+            "vendors": vendors,
+            "properties": properties,
+        },
     )
 
 
@@ -304,14 +361,19 @@ def email_upload_link(request, pk):
             fail_silently=False,
         )
     except Exception:
-        token.delete()
+        # Удаляем токен только если он не был использован другим процессом
+        UploadToken.objects.filter(
+            pk=token.pk, used_at__isnull=True,
+        ).delete()
         messages.error(
             request,
             "The upload link could not be emailed. No link was issued; please try again.",
         )
         return redirect("documents:request_detail", pk=item.pk)
     if sent != 1:
-        token.delete()
+        UploadToken.objects.filter(
+            pk=token.pk, used_at__isnull=True,
+        ).delete()
         messages.error(
             request,
             "The upload link could not be emailed. No link was issued; please try again.",
@@ -527,6 +589,68 @@ def apply_ai_metadata(request, pk):
 
 
 @login_required
+def request_list_json(request):
+    """AJAX endpoint: returns filtered document requests as JSON."""
+    org = current_organization(request)
+    if not org:
+        return JsonResponse({"error": "No workspace membership"}, status=403)
+    query = request.GET.get("q", "").strip()
+    status = request.GET.get("status", "")
+    today = timezone.localdate()
+    latest_doc_subquery = Document.objects.filter(
+        request=OuterRef("pk"),
+        organization=OuterRef("organization"),
+    ).order_by("-uploaded_at").values("expires_on")[:1]
+    items = requests_for_organization(org).select_related(
+        "vendor", "property"
+    ).annotate(
+        latest_expires_on=Subquery(latest_doc_subquery),
+    )
+    if query:
+        items = items.filter(
+            Q(vendor__name__icontains=query)
+            | Q(title__icontains=query)
+            | Q(property__name__icontains=query)
+        )
+    if status:
+        if status == "missing":
+            items = items.filter(latest_expires_on__isnull=True)
+        elif status == "expired":
+            items = items.filter(latest_expires_on__lt=today)
+        elif status == "expiring":
+            items = items.filter(
+                latest_expires_on__gte=today,
+                latest_expires_on__lte=today + timedelta(days=30),
+            )
+        elif status == "active":
+            items = items.filter(latest_expires_on__gt=today + timedelta(days=30))
+    results = []
+    for item in items[:50]:
+        expires_on = item.latest_expires_on
+        if expires_on is None:
+            item_status = "missing"
+        elif expires_on < today:
+            item_status = "expired"
+        elif expires_on <= today + timedelta(days=30):
+            item_status = "expiring"
+        else:
+            item_status = "active"
+        results.append({
+            "id": item.pk,
+            "vendor": item.vendor.name,
+            "contact": item.vendor.contact_name or "",
+            "email": item.vendor.email,
+            "property": item.property.name if item.property else "",
+            "document_type": item.get_document_type_display(),
+            "status": item_status,
+            "due_date": item.due_date.isoformat() if item.due_date else "",
+            "expires_on": expires_on.isoformat() if expires_on else "",
+            "url": reverse("documents:request_detail", kwargs={"pk": item.pk}),
+        })
+    return JsonResponse({"results": results, "count": len(results)})
+
+
+@login_required
 def download_document(request, document_pk):
     org = current_organization(request)
     document = get_object_or_404(
@@ -563,11 +687,27 @@ def export_csv(request):
             "Due date", "Expires on", "Latest file",
         ]
     )
+    today = timezone.localdate()
+    latest_doc_subquery = Document.objects.filter(
+        request=OuterRef("pk"),
+        organization=OuterRef("organization"),
+    ).order_by("-uploaded_at").values("expires_on", "original_filename")[:1]
     items = requests_for_organization(org).select_related(
         "vendor", "property"
-    ).prefetch_related("documents")
+    ).annotate(
+        latest_expires_on=Subquery(latest_doc_subquery.values("expires_on")),
+        latest_original_filename=Subquery(latest_doc_subquery.values("original_filename")),
+    )
     for item in items:
-        latest = item.latest_document
+        expires_on = item.latest_expires_on
+        if expires_on is None:
+            status = "missing"
+        elif expires_on < today:
+            status = "expired"
+        elif expires_on <= today + timedelta(days=30):
+            status = "expiring"
+        else:
+            status = "active"
         writer.writerow(
             [
                 csv_safe_cell(item.vendor.name),
@@ -575,10 +715,10 @@ def export_csv(request):
                 csv_safe_cell(item.vendor.email),
                 csv_safe_cell(item.property.name if item.property else ""),
                 csv_safe_cell(item.get_document_type_display()),
-                csv_safe_cell(item.status),
+                csv_safe_cell(status),
                 csv_safe_cell(item.due_date or ""),
-                csv_safe_cell(latest.expires_on if latest and latest.expires_on else ""),
-                csv_safe_cell(latest.original_filename if latest else ""),
+                csv_safe_cell(expires_on if expires_on else ""),
+                csv_safe_cell(item.latest_original_filename or ""),
             ]
         )
     return response

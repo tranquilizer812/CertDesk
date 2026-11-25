@@ -6,7 +6,8 @@
   <a class="brand auth-brand" href="{% url 'core:landing' %}"><span class="brand-mark">C</span><span>CertDesk</span></a>
   <div class="auth-card">
     <span class="auth-kicker">WELCOME BACK</span><h1>Sign in to your workspace</h1><p>Manage vendor documents without the spreadsheet chase.</p>
-    <form method="post" class="stack-form">{% csrf_token %}{{ form.non_field_errors }}{% for field in form %}<label>{{ field.label }}{{ field }}{{ field.errors }}</label>{% endfor %}<button class="btn btn-primary btn-block">Sign in</button></form>
+    <form method="post" class="stack-form" novalidate>{% csrf_token %}{{ form.non_field_errors }}{% for field in form %}{% if field.name == 'remember_me' %}<label style="display:flex;align-items:center;gap:8px;font-weight:normal;">{{ field }} <span>{{ field.label }}</span></label>{{ field.errors }}{% else %}<div class="field"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.errors %}<span class="error-message" id="error-{{ field.name }}" role="alert">{{ field.errors|striptags }}</span>{% endif %}</div>{% endif %}{% endfor %}<button class="btn btn-primary btn-block">Sign in</button></form>
+    <p class="auth-switch"><a href="{% url 'accounts:password_reset' %}">Forgot your password?</a></p>
     <div class="or"><span>or</span></div>
     <form method="post" action="{% url 'core:demo_login' %}">{% csrf_token %}<button class="btn btn-outline btn-block">Explore the live demo</button></form>
     <p class="auth-switch">New to CertDesk? <a href="{% url 'accounts:signup' %}">Create a workspace</a></p>

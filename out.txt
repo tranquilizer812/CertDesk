@@ -1,0 +1,16 @@
+Creating test database for alias 'default'...
+............................................................
+----------------------------------------------------------------------
+Ran 60 tests in 18.212s
+
+OK
+Destroying test database for alias 'default'...
+Found 60 test(s).
+System check identified no issues (0 silenced).
+Sent 1 document reminder(s).
+Sent 0 document reminder(s).
+Would email vendor@example.com: Bright Roof Co · Certificate of Insurance (missing)
+Sent 0 document reminder(s).
+Sent 1 document reminder(s).
+Sent 0 document reminder(s).
+EXIT_CODE=0 

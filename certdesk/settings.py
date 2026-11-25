@@ -130,11 +130,11 @@ AI_TIMEOUT_SECONDS = int(os.getenv("AI_TIMEOUT_SECONDS", "30"))
 BASE_URL = os.getenv("BASE_URL", "http://localhost:8000").rstrip("/")
 DEMO_MODE = env_bool("DEMO_MODE", True)
 
-if not DEBUG and (
+if (
     SECRET_KEY == DEFAULT_SECRET_KEY
     or SECRET_KEY == "replace-with-a-long-random-value-at-least-50-characters"
     or len(SECRET_KEY) < 50
 ):
     raise ImproperlyConfigured(
-        "SECRET_KEY must be set to a unique value of at least 50 characters when DEBUG is False."
+        "SECRET_KEY must be set to a unique value of at least 50 characters."
     )

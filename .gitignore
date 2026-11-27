@@ -3,6 +3,7 @@
 venv/
 __pycache__/
 *.py[cod]
+*.pyc
 *.sqlite3
 db.sqlite3
 media/
@@ -16,3 +17,44 @@ htmlcov/
 *.log
 .DS_Store
 .task-evidence/
+
+# Screenshots and QA artifacts
+screenshots/
+QA_SCREENSHOTS/
+
+# Node.js / frontend
+node_modules/
+package.json
+package-lock.json
+
+# Test and audit scripts (do not deploy to production)
+e2e_*.py
+test_*.py
+audit_*.py
+sec_*.py
+*_audit.py
+*_audit_results.json
+*_report.md
+*_debug*.py
+quick_test*.py
+tests/
+*.js
+
+# Misc temporary files
+nsec_p1.json
+nsec_p1.py
+nsec_p2.json
+nsec_p2.py
+nsec_playwright.py
+nsec_results.json
+null
+output2.txt
+patch_btn.py
+reg_audit.js
+reg_audit_results.json
+screenshots_capture.js
+tatusgit status
+server-error.log
+server.log
+test_smoke_final.txt
+ux_test_stage3.py

@@ -24,4 +24,8 @@ urlpatterns = [
     path("password-reset-complete/", auth_views.PasswordResetCompleteView.as_view(
         template_name="accounts/password_reset_complete.html",
     ), name="password_reset_complete"),
+    path("password-change/", auth_views.PasswordChangeView.as_view(
+        template_name="accounts/password_change.html",
+        success_url=reverse_lazy("documents:dashboard"),
+    ), name="password_change"),
 ]

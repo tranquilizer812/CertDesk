@@ -221,6 +221,8 @@ def request_list(request):
     )
 
 
+@login_required
+@require_POST
 def create_property(request):
     org = current_organization(request)
     if org is None:
@@ -238,6 +240,8 @@ def create_property(request):
     return redirect("documents:list")
 
 
+@login_required
+@require_POST
 def create_vendor(request):
     org = current_organization(request)
     if org is None:

@@ -105,6 +105,36 @@ def legal(request):
     return render(request, "core/legal.html")
 
 
+def api_root(request):
+    from django.http import JsonResponse
+    return JsonResponse({"endpoints": ["documents/", "certificates/", "export/", "vendors/", "properties/"]})
+
+
+def api_documents(request):
+    from django.http import JsonResponse
+    return JsonResponse({"results": []})
+
+
+def api_certificates(request):
+    from django.http import JsonResponse
+    return JsonResponse({"results": []})
+
+
+def api_export(request):
+    from django.http import JsonResponse
+    return JsonResponse({"results": []})
+
+
+def api_vendors(request):
+    from django.http import JsonResponse
+    return JsonResponse({"results": []})
+
+
+def api_properties(request):
+    from django.http import JsonResponse
+    return JsonResponse({"results": []})
+
+
 def health(request):
     from django.http import JsonResponse
 

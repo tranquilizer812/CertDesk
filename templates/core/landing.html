@@ -6,10 +6,10 @@
   <a class="brand" href="{% url 'core:landing' %}"><span class="brand-mark">C</span><span>CertDesk</span></a>
   <button class="nav-toggle" aria-label="Open menu" aria-expanded="false"><span aria-hidden="true">☰</span></button>
   <nav class="nav-links" aria-label="Primary">
-    <a href="#how">How it works</a>
-    <a href="{% url 'core:pricing' %}">Pricing</a>
-    <a href="{% url 'accounts:login' %}">Sign in</a>
-    <a class="btn btn-small btn-dark" href="{% url 'accounts:signup' %}">Start free</a>
+    <a href="#how"><span aria-hidden="true">⌂</span> How it works</a>
+    <a href="{% url 'core:pricing' %}"><span aria-hidden="true">💳</span> Pricing</a>
+    <a href="{% url 'accounts:login' %}"><span aria-hidden="true">🔐</span> Sign in</a>
+    <a class="btn btn-small btn-dark" href="{% url 'accounts:signup' %}"><span aria-hidden="true">🚀</span> Start free</a>
   </nav>
 </header>
 <main id="main-content">
@@ -55,5 +55,5 @@
   </section>
   <section class="cta-section shell"><div><span class="eyebrow light"><span aria-hidden="true"></span> Start with the free demo</span><h2>Less chasing.<br>More certainty.</h2></div><form method="post" action="{% url 'core:demo_login' %}">{% csrf_token %}<button class="btn btn-light btn-large">Open the demo workspace <span aria-hidden="true">→</span></button></form></section>
 </main>
-<footer class="footer shell"><a class="brand" href="{% url 'core:landing' %}"><span class="brand-mark">C</span><span>CertDesk</span></a><p>Document organization for small teams.</p><nav aria-label="Footer"><a href="{% url 'core:legal' %}">Legal & privacy</a><a href="{% url 'core:pricing' %}">Pricing</a></nav></footer>
+<footer class="footer shell"><a class="brand" href="{% url 'core:landing' %}"><span class="brand-mark">C</span><span>CertDesk</span></a><p>Document organization for small teams.</p><nav aria-label="Footer"><a href="{% url 'core:legal' %}">Legal & privacy</a></nav></footer>
 {% endblock %}

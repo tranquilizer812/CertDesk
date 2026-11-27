@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Vendors · CertDesk{% endblock %}
+{% block body_class %}app-page{% endblock %}
+{% block content %}
+<div class="app-layout">
+  <aside class="sidebar">
+    <a class="brand" href="{% url 'documents:dashboard' %}"><span class="brand-mark">C</span><span>CertDesk</span></a>
+    <div class="workspace-pill"><span class="workspace-logo">{{ organization.name|first }}</span><div><b>{{ organization.name }}</b><small>{{ organization.get_plan_display }} plan</small></div></div>
+    <nav class="app-nav" aria-label="Workspace">
+      <a href="{% url 'documents:dashboard' %}"><i aria-hidden="true">⌂</i> Overview</a>
+      <a href="{% url 'documents:list' %}"><i aria-hidden="true">▤</i> Documents</a>
+      <a href="{% url 'documents:list' %}?status=expired"><i aria-hidden="true">◷</i> Expirations</a>
+      <a href="{% url 'documents:export_csv' %}"><i aria-hidden="true">↓</i> Export</a>
+    </nav>
+    <div class="sidebar-bottom"><a href="{% url 'core:pricing' %}">Plans & billing</a><a href="{% url 'accounts:logout' %}">Sign out</a></div>
+  </aside>
+  <main class="app-main">
+    <header class="app-header"><div><span class="app-kicker">VENDORS</span><h1>All vendors</h1></div></header>
+    {% if vendors %}
+    <table>
+      <thead>
+        <tr><th>Name</th><th>Contact</th><th>Email</th><th>Trade</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for vendor in vendors %}
+        <tr>
+          <td><strong>{{ vendor.name }}</strong></td>
+          <td>{{ vendor.contact_name|default:"—" }}</td>
+          <td>{{ vendor.email|default:"—" }}</td>
+          <td>{{ vendor.trade|default:"—" }}</td>
+          <td></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state compact"><h3>No vendors yet</h3><p>Add your first vendor from the Documents page.</p></div>
+    {% endif %}
+  </main>
+</div>
+{% endblock %}

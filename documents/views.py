@@ -221,38 +221,56 @@ def request_list(request):
     )
 
 
-@login_required
-@require_POST
 def create_property(request):
     org = current_organization(request)
     if org is None:
-        return HttpResponseForbidden("A workspace membership is required.")
-    form = PropertyForm(request.POST, organization=org)
-    if form.is_valid():
-        obj = form.save(commit=False)
-        obj.organization = org
-        obj.save()
-        messages.success(request, "Property added.")
-    else:
-        messages.error(request, "Check the property details and try again.")
+        messages.warning(request, "Сначала создайте рабочее пространство, чтобы добавлять имущество.")
+        return redirect("accounts:signup")
+    if request.method == "POST":
+        form = PropertyForm(request.POST, organization=org)
+        if form.is_valid():
+            obj = form.save(commit=False)
+            obj.organization = org
+            obj.save()
+            messages.success(request, "Имущество добавлено.")
+        else:
+            messages.error(request, "Проверьте детали имущества и попробуйте снова.")
+    return redirect("documents:list")
+
+
+def create_vendor(request):
+    org = current_organization(request)
+    if org is None:
+        messages.warning(request, "Сначала создайте рабочее пространство, чтобы добавлять поставщиков.")
+        return redirect("accounts:signup")
+    if request.method == "POST":
+        form = VendorForm(request.POST, organization=org)
+        if form.is_valid():
+            obj = form.save(commit=False)
+            obj.organization = org
+            obj.save()
+            messages.success(request, "Поставщик добавлен.")
+        else:
+            messages.error(request, "Проверьте детали поставщика и попробуйте снова.")
     return redirect("documents:list")
 
 
 @login_required
-@require_POST
-def create_vendor(request):
+def vendor_list(request):
     org = current_organization(request)
-    if org is None:
-        return HttpResponseForbidden("A workspace membership is required.")
-    form = VendorForm(request.POST, organization=org)
-    if form.is_valid():
-        obj = form.save(commit=False)
-        obj.organization = org
-        obj.save()
-        messages.success(request, "Vendor added.")
-    else:
-        messages.error(request, "Check the vendor details and try again.")
-    return redirect("documents:list")
+    if not org:
+        return redirect("accounts:signup")
+    vendors = Vendor.objects.filter(organization=org).order_by("name")
+    return render(request, "documents/vendor_list.html", {"vendors": vendors, "organization": org})
+
+
+@login_required
+def property_list(request):
+    org = current_organization(request)
+    if not org:
+        return redirect("accounts:signup")
+    properties = Property.objects.filter(organization=org).order_by("name")
+    return render(request, "documents/property_list.html", {"properties": properties, "organization": org})
 
 
 @login_required

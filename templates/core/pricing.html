@@ -2,7 +2,7 @@
 {% block title %}Pricing · CertDesk{% endblock %}
 {% block body_class %}marketing-page{% endblock %}
 {% block content %}
-<header class="nav shell"><a class="brand" href="{% url 'core:landing' %}"><span class="brand-mark">C</span><span>CertDesk</span></a><nav class="nav-links" aria-label="Primary"><a href="{% url 'core:landing' %}#how">How it works</a><a href="{% url 'accounts:login' %}">Sign in</a><a class="btn btn-small btn-dark" href="{% url 'accounts:signup' %}">Start free</a></nav></header>
+<header class="nav shell"><a class="brand" href="{% url 'core:landing' %}"><span class="brand-mark">C</span><span>CertDesk</span></a><nav class="nav-links" aria-label="Primary"><a href="{% url 'core:landing' %}#how"><span aria-hidden="true">⌂</span> How it works</a><a href="{% url 'accounts:login' %}"><span aria-hidden="true">🔐</span> Sign in</a><a class="btn btn-small btn-dark" href="{% url 'accounts:signup' %}"><span aria-hidden="true">🚀</span> Start free</a></nav></header>
 <main id="main-content" class="pricing-page shell">
   <div class="pricing-heading"><span class="eyebrow"><span></span> Simple pricing</span><h1>Organize documents without the spreadsheet chase.<br><em>Know what needs attention.</em></h1><p>Create a workspace to try CertDesk. Paid plans become available when checkout is enabled.</p></div>
   <div class="pricing-grid">
@@ -11,5 +11,5 @@
   </div>
   <p class="pricing-note">Prices exclude applicable taxes. Plan limits apply to tracked document requests.</p>
 </main>
-<footer class="footer shell"><a class="brand" href="{% url 'core:landing' %}"><span class="brand-mark">C</span><span>CertDesk</span></a><p>Document organization for small teams.</p><nav aria-label="Footer"><a href="{% url 'core:legal' %}">Legal & privacy</a><a href="{% url 'core:pricing' %}">Pricing</a></nav></footer>
+<footer class="footer shell"><a class="brand" href="{% url 'core:landing' %}"><span class="brand-mark">C</span><span>CertDesk</span></a><p>Document organization for small teams.</p><nav aria-label="Footer"><a href="{% url 'core:legal' %}">Legal & privacy</a></nav></footer>
 {% endblock %}

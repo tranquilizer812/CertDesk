@@ -27,7 +27,10 @@ class SignupForm(UserCreationForm):
         return email
 
     def clean_organization_name(self):
-        return self.cleaned_data["organization_name"].strip()
+        name = self.cleaned_data["organization_name"].strip()
+        if len(name) > 160:
+            raise forms.ValidationError("Company name must be 160 characters or fewer.")
+        return name
 
     @transaction.atomic
     def save(self, commit=True):

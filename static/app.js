@@ -74,6 +74,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  // Accessibility: move focus to the first field with a validation error
+  (function() {
+    const firstError = document.querySelector('.field .error-message, .errorlist, [aria-invalid="true"]');
+    if (firstError) {
+      const field = firstError.closest('.field');
+      const input = field ? field.querySelector('input, select, textarea') : null;
+      if (input) {
+        input.focus();
+      } else if (firstError.matches('input, select, textarea')) {
+        firstError.focus();
+      }
+    }
+  })();
+
   // Accessibility: aria-label for icon-only links in sidebar
   document.querySelectorAll('.sidebar a i[aria-hidden="true"]').forEach((icon) => {
     const link = icon.closest('a');

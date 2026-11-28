@@ -14,11 +14,16 @@ def env_bool(name, default=False):
     return os.getenv(name, str(default)).strip().lower() in {"1", "true", "yes", "on"}
 
 
-DEFAULT_SECRET_KEY = "dev-only-change-this-secret-key-please-use-50-plus-random-characters"
-SECRET_KEY = os.getenv("SECRET_KEY", DEFAULT_SECRET_KEY)
-DEBUG = env_bool("DEBUG", True)
+SECRET_KEY = os.getenv("SECRET_KEY")
+if not SECRET_KEY or len(SECRET_KEY) < 50:
+    raise ImproperlyConfigured(
+        "SECRET_KEY must be set in .env to a unique value of at least 50 characters."
+    )
+DEBUG = env_bool("DEBUG", False)
 ALLOWED_HOSTS = [h.strip() for h in os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if h.strip()]
 CSRF_TRUSTED_ORIGINS = [h.strip() for h in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",") if h.strip()]
+CSRF_USE_SESSIONS = False
+CSRF_HEADER_NAME = "HTTP_X_CSRFTOKEN"
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -111,7 +116,7 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 FILE_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024
 DATA_UPLOAD_MAX_MEMORY_SIZE = 12 * 1024 * 1024
 
-EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.console.EmailBackend")
+EMAIL_BACKEND = os.getenv("EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend")
 EMAIL_HOST = os.getenv("EMAIL_HOST", "")
 EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
@@ -130,11 +135,4 @@ AI_TIMEOUT_SECONDS = int(os.getenv("AI_TIMEOUT_SECONDS", "30"))
 BASE_URL = os.getenv("BASE_URL", "http://localhost:8000").rstrip("/")
 DEMO_MODE = env_bool("DEMO_MODE", True)
 
-if (
-    SECRET_KEY == DEFAULT_SECRET_KEY
-    or SECRET_KEY == "replace-with-a-long-random-value-at-least-50-characters"
-    or len(SECRET_KEY) < 50
-):
-    raise ImproperlyConfigured(
-        "SECRET_KEY must be set to a unique value of at least 50 characters."
-    )
+# SECRET_KEY validity already enforced above (must be set and ≥50 chars)

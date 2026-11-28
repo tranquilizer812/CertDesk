@@ -2,7 +2,7 @@
 {% block title %}Legal & privacy · CertDesk{% endblock %}
 {% block body_class %}legal-page{% endblock %}
 {% block content %}
-<header class="nav shell"><a class="brand" href="{% url 'core:landing' %}"><span class="brand-mark">C</span><span>CertDesk</span></a><nav class="nav-links" aria-label="Primary"><a href="{% url 'core:landing' %}#how">How it works</a><a href="{% url 'core:pricing' %}">Pricing</a><a href="{% url 'accounts:login' %}">Sign in</a><a class="btn btn-small btn-dark" href="{% url 'accounts:signup' %}">Start free</a></nav></header>
+<header class="nav shell"><a class="brand" href="{% url 'core:landing' %}"><span class="brand-mark">C</span><span>CertDesk</span></a><nav class="nav-links" aria-label="Primary"><a href="{% url 'core:landing' %}#how"><span aria-hidden="true">⌂</span> How it works</a><a href="{% url 'core:pricing' %}"><span aria-hidden="true">💳</span> Pricing</a><a href="{% url 'accounts:login' %}"><span aria-hidden="true">🔐</span> Sign in</a><a class="btn btn-small btn-dark" href="{% url 'accounts:signup' %}"><span aria-hidden="true">🚀</span> Start free</a></nav></header>
 <main id="main-content" class="legal shell">
   <span class="eyebrow"><span></span> Product information</span><h1>Legal & privacy</h1>
   <div class="legal-grid">
@@ -10,5 +10,5 @@
     <aside><h3>Launch checklist</h3><ul><li>Replace this draft with company identity and contact details</li><li>Publish the applicable privacy policy and terms</li><li>Document retention and deletion periods</li><li>Add a backup and restore procedure</li><li>Complete the security and payment review</li></ul></aside>
   </div>
 </main>
-<footer class="footer shell"><a class="brand" href="{% url 'core:landing' %}"><span class="brand-mark">C</span><span>CertDesk</span></a><p>Document organization for small teams.</p><nav aria-label="Footer"><a href="{% url 'core:legal' %}">Legal & privacy</a><a href="{% url 'core:pricing' %}">Pricing</a></nav></footer>
+<footer class="footer shell"><a class="brand" href="{% url 'core:landing' %}"><span class="brand-mark">C</span><span>CertDesk</span></a><p>Document organization for small teams.</p><nav aria-label="Footer"><a href="{% url 'core:legal' %}"><span aria-hidden="true">📄</span> Legal & privacy</a></nav></footer>
 {% endblock %}
